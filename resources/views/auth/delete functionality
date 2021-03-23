@@ -1,0 +1,172 @@
+Step 1 : View 
+Create a button With id or class 
+ <a class="btn btn-danger scrap btn-sm" data-id="<?php echo $client->id; ?>" title="Delete"><i class="fa fa-trash fa-sm"></i></a>
+
+Js code  in view file 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script type="text/javascript">
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        $(document).ready(function() {
+            $(document).on("click", ".scrap", function() {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var edit_id = $(this).data('id');
+
+                        if (edit_id != '') {
+                            $.ajax({
+                                url: 'client/' + edit_id + '/delete',
+                                type: 'GET',
+                                dataType: 'json',
+                                data: {},
+                                success: function(response) {
+                                    Swal.fire(
+                                        'Deleted!',
+                                        'Client has been deleted successfully !!!',
+                                        'success'
+                                    )
+                                    // console.log(response);
+                                    // $('#notification').removeClass('alert_display').addClass('show');
+                                    // $("body").scrollTop(0);
+                                    // $("#notification").hide().appendTo('#notification').fadeIn(1000);
+                                    // $("#notification").delay(3000).fadeOut(2000);
+                                },
+                                error: function() {
+                                    Swal.fire(
+                                        'Something Wrong...Please check network connection !!!',
+                                    )
+                                    // $('#error_notification').removeClass('alert_display').addClass('show');
+                                    // $("body").scrollTop(0);
+
+                                }
+                            });
+                        } else {
+                            alert('Invalid request');
+                        }
+                    }
+                })
+
+            });
+
+            $(document).on("click", ".scrap_status", function() {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var edit_id = $(this).data('id');
+                        let this_button_icon = $(this).find("i");
+                        //var status = $('status').val();
+                        if (edit_id != '') {
+                            $.ajax({
+                                url: 'client/' + edit_id + '/status',
+                                type: 'GET',
+                                dataType: 'json',
+                                data: {
+                                    status: status
+                                },
+                                success: function(response) {
+                                    console.log(response.status);
+                                    if (response.status == 1) {
+                                        this_button_icon.removeClass("fa fa-user").addClass("fa fa-user-slash");
+                                        $(this).attr('data-id', 0);
+                                        this_button_icon.parents().attr('title', 'Deactivate');
+                                        Swal.fire(
+                                            'Status!',
+                                            'Client has been activated.',
+                                            'success'
+                                        )
+                                        // $('#status_notification').removeClass('alert_display').addClass('show');
+                                        // $("body").scrollTop(0);
+                                        // $("#status_notification").hide().fadeIn(1000);
+                                        // $("#status_notification").delay(3000).fadeOut(2000);
+                                    } else {
+                                        this_button_icon.removeClass("fa fa-user-slash").addClass("fa fa-user");
+                                        $(this).attr('data-id', 1);
+                                        this_button_icon.parents().attr('title', 'Activate');
+                                        Swal.fire(
+                                            'Status!',
+                                            'Client has been deactivated.',
+                                            'success'
+                                        )
+                                        // $('#status_notification').removeClass('alert_display').addClass('show');
+                                        // $("body").scrollTop(0);
+                                        // $("#status_notification").hide().fadeIn(1000);
+                                        // $("#status_notification").delay(3000).fadeOut(2000);
+                                    }
+                                },
+                                error: function() {
+                                    Swal.fire(
+                                        'Something Wrong...Please check network connection !!!',
+                                    )
+                                    // $('#error_notification').removeClass('hide').addClass('show');
+                                    // $("body").scrollTop(0);
+
+                                }
+                            });
+                        } else {
+                            alert('Invalid request');
+                        }
+                    }
+                })
+
+            });
+
+            var datatable = $('#kt_datatable').KTDatatable({
+                data: {
+                    saveState: {
+                        cookie: false
+                    }
+                },
+                search: {
+                    input: $('#kt_datatable_search_query'),
+                    key: 'generalSearch'
+                },
+            });
+            return datatable;
+        })
+    </script>
+
+Step 3 : Controller .php
+
+ public function deleteClient(Request $request, $id)
+    {
+        User::where('id', $id)->update(['is_delete' => 1]);
+        $response['status'] = 1;
+        $response['is_delete'] = User::select('id')->where('id', $id)->value('id');
+        return response()->json($response);
+    }
+
+
+    public function statusClient($id)
+    {
+        $clients = User::select('is_active')->where('id', $id)->value('is_active');
+
+        if ($clients == 1) {
+            User::where('id', $id)->update(['is_active' => 0]);
+            $response['status'] = User::select('is_active')->where('id', $id)->value('is_active');
+            return response()->json($response);
+        } else {
+            User::where('id', $id)->update(['is_active' => 1]);
+            $response['status'] = User::select('is_active')->where('id', $id)->value('is_active');
+            return response()->json($response);
+        }
+    }
+
